@@ -14,6 +14,7 @@ pdfs - PDF file
 
 var ignoreType = "all"; // 削除対象にしないファイル形式
 var noticeChannels = PropertiesService.getScriptProperties().getProperty("NOTICE_CHANNELS").split(",");
+var targetChannels = PropertiesService.getScriptProperties().getProperty("TARGET_CHANNELS").split(",");
 
 /* 削除処理 */
 function deleteOldFile(){
@@ -41,11 +42,11 @@ function postDeleteFileMessage(channelId, botName, message){
 var SlackDelFileApp = {}
 
 /* SLACKのTOKENを読み込み */
-SlackDelFileApp.SLACK_ACCESS_TOKEN = PropertiesService.getScriptProperties().getProperty('SLACK_ACCESS_TOKEN');// slackで発行したTOKENをGASの環境変数に設定
+SlackDelFileApp.SLACK_ALL_TOKEN = PropertiesService.getScriptProperties().getProperty('SLACK_ALL_TOKEN');// slackで発行したTOKENをGASの環境変数に設定
 
 /* soundTricker/SlackApp　を使うよりurlからAPI叩いたほうが早いらしいので */
 SlackDelFileApp.execute = function(method, params){
-  if (params === undefined ) params = {'token' : SlackDelFileApp.SLACK_ACCESS_TOKEN};
+  if (params === undefined ) params = {'token' : SlackDelFileApp.SLACK_ALL_TOKEN};
   var options = {
     'method': 'POST',
     'payload': params
@@ -112,13 +113,13 @@ SlackDelFileApp.postConfirm = function(channelName, days, ignoreType){
   //削除ファイルメッセージ表示
   deleteFiles.files.forEach(function(f){
     var user  = SlackDelFileApp.getUserInfo(f.user).user.name;
-    listMsg +=  "\n\t・" + f.name + '  ' + fileSize(f.size) + '   '+ user +'さんが'+upTime(f.created)+ 'にアップした'; 
+    listMsg +=  "\n\t・" + f.name + '  ' + fileSize(f.size) + '   '+ user +'さんが'+upTime(f.created)+ 'にアップした'+"\n\t.url: "+f.url_private_download; 
   });
   
   var params = {
-    'token': SlackDelFileApp.SLACK_ACCESS_TOKEN,
+    'token': SlackDelFileApp.SLACK_ALL_TOKEN,
     'channel': channelName,
-    'username' : 'ファイル削除botくん', //投稿するbotの名前
+    'username' : 'ファイル削除bot', //投稿するbotの名前
     'text'     : deleteFiles.files.length == 0 ? nullMsg : listMsg //投稿するメッセージ
   }
   return this.execute('chat.postMessage', params);
@@ -127,7 +128,7 @@ SlackDelFileApp.postConfirm = function(channelName, days, ignoreType){
 /* ファイルの削除*/
 SlackDelFileApp.deleteFile = function(id){
   var params = {
-    'token': SlackDelFileApp.SLACK_ACCESS_TOKEN,
+    'token': SlackDelFileApp.SLACK_ALL_TOKEN,
     'file' : id // delete対象はidで指定
   }
  return this.execute('files.delete', params);
@@ -135,14 +136,14 @@ SlackDelFileApp.deleteFile = function(id){
 
 /* ファイルのリスト取得 */ // unused
 SlackDelFileApp.getFilesList = function(params){
-  params.token = SlackDelFileApp.SLACK_ACCESS_TOKEN;
+  params.token = SlackDelFileApp.SLACK_ALL_TOKEN;
    return this.execute('files.list', params);
 }
 
 /* ユーザー情報を取得 */
 SlackDelFileApp.getUserInfo = function(id){
     var params = {
-    'token': SlackDelFileApp.SLACK_ACCESS_TOKEN,
+    'token': SlackDelFileApp.SLACK_ALL_TOKEN,
     'user' : id // ユーザーidで指定
   }
    return this.execute('users.info', params);
@@ -179,7 +180,7 @@ SlackDelFileApp.elapsedDaysToUnixTime = function(days){
 SlackDelFileApp.getFileListWithOutOption = function(channelId, days, ignoreType, count){
   if(count === undefined) count = 1000;
   var params = {
-    'token'	: SlackDelFileApp.SLACK_ACCESS_TOKEN,
+    'token'	: SlackDelFileApp.SLACK_ALL_TOKEN,
     'count'	: count,
     'ts_to'	: SlackDelFileApp.elapsedDaysToUnixTime(days),
     //'channel'	: channelId,
